@@ -1,0 +1,24 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+!pragma layout smetana
+top to bottom direction
+component "АРМ владельца\nФорма и журнал" as ui
+component "Импорт CSV" as imp
+component "Журнал операций" as ledger
+component "Отчёты" as rep
+component "Хранилище SQLite" as db
+ui ..> ledger : команды
+ui ..> imp : файл
+ui ..> rep : период
+imp ..> ledger : строки выписки
+ledger ..> db : запись
+rep ..> db : чтение
+@enduml

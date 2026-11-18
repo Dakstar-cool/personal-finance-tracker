@@ -1,0 +1,22 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+!pragma layout smetana
+state "Черновик" as Draft
+state "Проведена" as Posted
+state "Аннулирована" as Void
+[*] --> Draft : создать
+Draft --> Posted : подтвердить [данные верны]
+Draft --> Void : удалить черновик
+Posted --> Void : аннулировать
+Posted : исправить [версия совпала] / пересчитать
+Draft : изменить поля / сохранить
+Void --> [*]
+@enduml

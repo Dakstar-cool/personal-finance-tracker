@@ -1,0 +1,27 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+!pragma layout smetana
+node "ПК владельца" as PC {
+  node "Windows 11" as OS {
+    node "Среда Python и Tcl/Tk" as RT {
+      artifact "Приложение учёта" as APP
+    }
+    artifact "finance.sqlite3" as DB
+    artifact "Выписка CSV" as IN
+  }
+}
+node "Съёмный носитель\nс шифрованием" as MEDIA {
+  artifact "Резервная копия" as BAK
+}
+APP -- DB : локальный файловый ввод-вывод
+APP -- IN : чтение
+APP -- BAK : SQLite Backup API
+@enduml

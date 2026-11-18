@@ -1,0 +1,36 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+class "Счёт" as A {
+  +название: Строка
+  +начальныйОстаток: Копейки
+}
+class "Категория" as C {
+  +название: Строка
+  +вид: ВидОперации
+}
+class "Операция" as E {
+  +дата: Дата
+  +сумма: Копейки
+  +статус: Статус
+  +версия: Целое
+  +провести()
+  +исправить(сумма, версия)
+  +аннулировать()
+}
+class "Сервис отчётов" as R {
+  +заПериод(счёт, начало, конец): Сводка
+}
+A "1" -- "0..*" E
+C "1" -- "0..*" E
+E <.. R : читает проведённые
+@enduml

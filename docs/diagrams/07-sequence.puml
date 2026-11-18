@@ -1,0 +1,29 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 180
+actor "Владелец" as U
+boundary "АРМ" as UI
+control "Журнал" as J
+database "SQLite" as DB
+U -> UI : Подтвердить расход
+UI -> J : провести(id, версия)
+J -> DB : Записать статус\nпо id и версии
+alt Изменена одна строка
+DB --> J : COMMIT
+J --> UI : Запись проведена
+UI --> U : Обновить журнал
+else Версия устарела
+DB --> J : Нет изменённых строк
+J --> UI : Конфликт
+UI --> U : Предложить перечитать запись
+end
+@enduml

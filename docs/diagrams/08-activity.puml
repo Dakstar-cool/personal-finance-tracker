@@ -1,0 +1,33 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+start
+:Выбрать счёт и файл CSV;
+:Разобрать строки и проверить схему;
+if (Есть ошибка?) then (да)
+  :Показать номер строки и причину;
+  stop
+else (нет)
+  :Отделить совпадения по ключу банка;
+endif
+if (Реквизиты дубля расходятся?) then (да)
+  :Отклонить пакет с конфликтом;
+  stop
+else (нет)
+  :Показать новые строки и число повторов;
+endif
+if (Владелец подтвердил?) then (да)
+  :Записать новые операции одной транзакцией;
+  :Обновить журнал;
+else (нет)
+  :Закрыть предпросмотр;
+endif
+stop
+@enduml

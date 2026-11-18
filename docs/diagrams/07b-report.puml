@@ -1,0 +1,23 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 180
+actor "Владелец" as U
+boundary "АРМ" as UI
+control "Отчёты" as R
+database "SQLite" as DB
+U -> UI : Выбрать ноябрь
+UI -> R : заПериод(счёт, начало, конец)
+R -> DB : Выбрать проведённые записи
+DB --> R : Даты, виды, суммы, категории
+R --> UI : Доход, расход, остаток
+UI --> U : Сводка за месяц
+@enduml

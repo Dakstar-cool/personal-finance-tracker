@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Личный бюджет</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f4ef;color:#202b29;font:16px "Segoe UI",Arial,sans-serif}
+header{background:#203e39;color:white;padding:15px 32px;display:flex;align-items:center;justify-content:space-between}header strong{font:600 24px Georgia,serif}header span{font-size:14px}
+main{max-width:1060px;margin:auto;padding:23px 30px}h1{font:normal 32px Georgia,serif;margin:0 0 18px}
+section.top, .title, nav, .actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:0 0 22px}
+.card,article,dialog{background:white;border:1px solid #cbd2cc;border-radius:7px}.card{padding:14px 18px}.card span{display:block;color:#485b56;font-size:15px}.card strong{font-size:26px;display:block;margin-top:5px;font-weight:600;font-variant-numeric:tabular-nums}
+article{padding:15px 20px 14px}h2{font:normal 22px Georgia,serif;margin:0}.title{margin-bottom:10px}
+button,input,select{font:inherit;color:inherit;border:1px solid #98a8a1;border-radius:4px;background:white;padding:7px 10px}button{cursor:pointer}button.primary{background:#28594c;color:white;border-color:#28594c}
+nav{justify-content:flex-start;margin:0 0 12px}nav button{border:0;background:transparent;border-radius:0;border-bottom:2px solid transparent;padding:6px 3px;margin-right:14px}nav button[aria-pressed=true]{border-color:#28594c;color:#21483e;font-weight:600}
+table{width:100%;border-collapse:collapse}th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #d7dfda}th{font-size:14px;color:#465a53;font-weight:600}td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}tr:last-child td{border-bottom:0}
+button.open{background:transparent;border:0;padding:0;color:#205449;text-decoration:underline;text-underline-offset:3px}dialog{width:min(400px,94%);padding:23px}dialog::backdrop{background:#1e302d65}label{display:block}form label{margin:10px 0}form input,form select{display:block;width:100%;margin-top:4px}.actions{margin-top:18px}#notice{margin:7px 0;color:#254c40}.sub{color:#44574f}
+@media(max-width:640px){main{padding:13px 8px}.cards{gap:4px}.card{padding:7px}.card strong{font-size:18px}header{padding:10px}td,th{padding:6px 2px}.top{flex-wrap:wrap}}
+</style>
+<header><strong>Личный бюджет</strong><span>Рублёвый счёт · Основной</span></header><main>
+<section class="top"><h1>Обзор счёта</h1><label>Период <input id="period" type="month" value="2026-11" min="2026-11" max="2026-12"></label></section>
+<div class="cards"><div class="card"><span>Доходы за месяц</span><strong id="income"></strong></div><div class="card"><span>Расходы за месяц</span><strong id="expense"></strong></div><div class="card"><span>Остаток на конец месяца</span><strong id="balance"></strong></div></div>
+<nav><button id="journal" aria-pressed="true">Журнал</button><button id="analytics" aria-pressed="false">Расходы по категориям</button></nav>
+<article><div class="title"><h2 id="heading">Операции</h2><button id="add" class="primary">Добавить операцию</button></div><div id="table"></div><p id="notice" role="status" aria-live="polite"></p></article></main>
+<dialog><form id="form"><h2 id="formTitle">Новая операция</h2><p id="origin"></p><label>Дата<input type="date" name="day" min="2026-11-01" max="2026-12-31" required></label><label>Категория<select name="category"><option>Продукты</option><option>Транспорт</option><option>Досуг</option><option>Зарплата</option></select></label><label>Сумма, ₽<input name="amount" inputmode="decimal" placeholder="1 250,40" required></label><label>Статус<select name="status"><option value="posted">Проведена</option><option value="draft">Черновик</option><option value="void" hidden>Аннулирована</option></select></label><p id="err" role="alert"></p><div class="actions"><button type="button" id="close">Отмена</button><button class="primary">Сохранить</button></div></form></dialog>
+<script>
+const el=id=>document.getElementById(id), fmt=n=>(n/100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₽';
+const entries=[
+  {day:'2026-11-05',cat:'Зарплата',amount:3000000,st:'posted'},
+  {day:'2026-11-07',cat:'Продукты',amount:125040,st:'posted'},
+  {day:'2026-11-08',cat:'Транспорт',amount:14960,st:'posted'},
+  {day:'2026-11-12',cat:'Досуг',amount:60000,st:'draft'}
+];
+let report=false, editing=null;
+function render(){
+ const m=el('period').value || '2026-11', periodEntries=entries.filter(x=>x.day.slice(0,7)===m);
+ const posted=periodEntries.filter(x=>x.st==='posted'), sum=xs=>xs.reduce((a,x)=>a+x.amount,0);
+ const inc=x=>x.cat==='Зарплата', actual=entries.filter(x=>x.st==='posted' && x.day.slice(0,7)<=m);
+ el('income').textContent=fmt(sum(posted.filter(inc)));el('expense').textContent=fmt(sum(posted.filter(x=>!inc(x))));
+ el('balance').textContent=fmt(1000000+sum(actual.filter(inc))-sum(actual.filter(x=>!inc(x))));
+ const categories=new Map();for (const x of posted.filter(x=>!inc(x))) categories.set(x.cat,(categories.get(x.cat)||0)+x.amount);
+ const sortedRows=[...periodEntries].sort((a,b)=>b.day.localeCompare(a.day));
+ const rows=report?[...categories].sort((a,b)=>b[1]-a[1]).map(x=>[x[0],fmt(x[1])]):
+ sortedRows.map(x=>[x.day.split('-').reverse().join('.'),x.cat,x.st==='posted'?'Проведена':x.st==='void'?'Аннулирована':'Черновик',(inc(x)?'+':'−')+fmt(x.amount)]);
+ const table=document.createElement('table'), head=table.createTHead().insertRow(), body=table.createTBody();
+ for (const title of report?['Категория','Расход']:['Дата','Категория','Статус','Сумма']) {const th=document.createElement('th');th.textContent=title;head.append(th)}
+ for (const [i,row] of rows.entries()){
+   const tr=body.insertRow();for(const [j,val] of row.entries()){
+     const cell=tr.insertCell();
+     if(!report && j===0 && sortedRows[i].st!=='void'){
+       const button=document.createElement('button');button.className='open';button.textContent=val;
+       button.setAttribute('aria-label','Открыть операцию от '+val);button.onclick=()=>openEntry(sortedRows[i]);cell.append(button);
+     } else cell.textContent=val;
+   }
+ }
+ el('table').replaceChildren(table);el('heading').textContent=report?'Структура расходов':'Операции';
+ el('notice').textContent=rows.length?'':'За выбранный месяц записей нет.';
+ el('journal').setAttribute('aria-pressed',String(!report));el('analytics').setAttribute('aria-pressed',String(report));
+}
+el('period').onchange=render;el('journal').onclick=()=>{report=false;render()};el('analytics').onclick=()=>{report=true;render()};
+const dialog=document.querySelector('dialog'), form=el('form');
+function openEntry(entry){
+ editing=entry;form.reset();const fields=form.elements;
+ el('formTitle').textContent=entry?'Операция':'Новая операция';
+ el('origin').hidden=!entry;el('origin').textContent=entry?'Источник записи — ручной ввод':'';
+ fields.day.value=entry?entry.day:el('period').value+'-15';
+ fields.status.querySelector('[value=void]').hidden=!entry;
+ fields.status.querySelector('[value=draft]').disabled=entry?.st==='posted';
+ fields.status.value=entry?entry.st:'posted';
+ if(entry){fields.category.value=entry.cat;fields.amount.value=(entry.amount/100).toFixed(2).replace('.',',')}
+ el('err').textContent='';dialog.showModal();
+}
+el('add').onclick=()=>openEntry(null);
+el('close').onclick=()=>dialog.close();
+form.onsubmit=e=>{e.preventDefault();const data=new FormData(form), raw=data.get('amount').trim().replace(/\s/g,'').replace(',','.');
+ if(!/^\d+(\.\d{1,2})?$/.test(raw)){el('err').textContent='Введите положительную сумму с точностью до копейки.';return}
+ const [units,frac='']=raw.split('.'), amount=Number(units)*100+Number(frac.padEnd(2,'0'));
+ if(amount<1||amount>1e12){el('err').textContent='Сумма вне допустимого диапазона.';return}
+ const record={day:data.get('day'),cat:data.get('category'),amount,st:data.get('status')};
+ if(editing && record.st==='void') editing.st='void';
+ else if(editing) Object.assign(editing,record);
+ else entries.push(record);
+ el('period').value=data.get('day').slice(0,7);dialog.close();render();el('notice').textContent='Операция сохранена.'};
+render();
+</script></html>

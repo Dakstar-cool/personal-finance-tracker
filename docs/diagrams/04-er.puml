@@ -1,0 +1,42 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam ArrowColor #263A4A
+skinparam defaultTextAlignment center
+skinparam monochrome true
+skinparam roundcorner 5
+hide footbox
+!pragma layout smetana
+hide circle
+hide methods
+skinparam linetype ortho
+entity "account • Счёт" as account {
+  * id : INTEGER <<PK>>
+  --
+  name : TEXT <<UQ>>
+  opened_on : TEXT
+  opening_minor : INTEGER
+}
+entity "entry • Операция" as entry {
+  * id : INTEGER <<PK>>
+  --
+  account_id : INTEGER <<FK>>
+  category_id : INTEGER <<FK>>
+  booked_on : TEXT
+  amount_minor : INTEGER
+  status : TEXT
+  bank_ref : TEXT [NULL]
+  note : TEXT
+  revision : INTEGER
+}
+entity "category • Категория" as cat {
+  * id : INTEGER <<PK>>
+  --
+  name : TEXT <<UQ>>
+  kind : TEXT
+}
+account ||--o{ entry
+cat ||--o{ entry
+@enduml
