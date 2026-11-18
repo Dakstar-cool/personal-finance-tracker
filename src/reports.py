@@ -4,7 +4,9 @@ from datetime import date
 
 def monthly(connection, account_id, start, end):
     """Получить обороты за [start, end) и остаток на конец периода."""
-    if date.fromisoformat(start) >= date.fromisoformat(end):
+    start = date.fromisoformat(start).isoformat()
+    end = date.fromisoformat(end).isoformat()
+    if start >= end:
         raise ValueError("Конец периода должен быть позже начала.")
     account = connection.execute(
         "SELECT opened_on, opening_minor FROM account WHERE id=?", (account_id,)

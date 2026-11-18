@@ -18,7 +18,7 @@ button.open{background:transparent;border:0;padding:0;color:#205449;text-decorat
 <div class="cards"><div class="card"><span>Доходы за месяц</span><strong id="income"></strong></div><div class="card"><span>Расходы за месяц</span><strong id="expense"></strong></div><div class="card"><span>Остаток на конец месяца</span><strong id="balance"></strong></div></div>
 <nav><button id="journal" aria-pressed="true">Журнал</button><button id="analytics" aria-pressed="false">Расходы по категориям</button></nav>
 <article><div class="title"><h2 id="heading">Операции</h2><button id="add" class="primary">Добавить операцию</button></div><div id="table"></div><p id="notice" role="status" aria-live="polite"></p></article></main>
-<dialog><form id="form"><h2 id="formTitle">Новая операция</h2><p id="origin"></p><label>Дата<input type="date" name="day" min="2026-11-01" max="2026-12-31" required></label><label>Категория<select name="category"><option>Продукты</option><option>Транспорт</option><option>Досуг</option><option>Зарплата</option></select></label><label>Сумма, ₽<input name="amount" inputmode="decimal" placeholder="1 250,40" required></label><label>Статус<select name="status"><option value="posted">Проведена</option><option value="draft">Черновик</option><option value="void" hidden>Аннулирована</option></select></label><p id="err" role="alert"></p><div class="actions"><button type="button" id="close">Отмена</button><button class="primary">Сохранить</button></div></form></dialog>
+<dialog><form id="form"><h2 id="formTitle">Новая операция</h2><p id="origin"></p><label>Дата<input type="date" name="day" min="2026-11-01" max="2026-12-31" required></label><label>Категория<select name="category"><option>Продукты</option><option>Транспорт</option><option>Досуг</option><option>Зарплата</option></select></label><label>Сумма, ₽<input name="amount" inputmode="decimal" placeholder="1 250,40" required></label><label>Комментарий<input name="note" autocomplete="off"></label><label>Статус<select name="status"><option value="posted">Проведена</option><option value="draft">Черновик</option><option value="void" hidden>Аннулирована</option></select></label><p id="err" role="alert"></p><div class="actions"><button type="button" id="close">Отмена</button><button class="primary">Сохранить</button></div></form></dialog>
 <script>
 const el=id=>document.getElementById(id), fmt=n=>(n/100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₽';
 const entries=[
@@ -63,6 +63,7 @@ function openEntry(entry){
  fields.status.querySelector('[value=void]').hidden=!entry;
  fields.status.querySelector('[value=draft]').disabled=entry?.st==='posted';
  fields.status.value=entry?entry.st:'posted';
+ fields.note.value=entry?.note || '';
  if(entry){fields.category.value=entry.cat;fields.amount.value=(entry.amount/100).toFixed(2).replace('.',',')}
  el('err').textContent='';dialog.showModal();
 }
@@ -72,7 +73,7 @@ form.onsubmit=e=>{e.preventDefault();const data=new FormData(form), raw=data.get
  if(!/^\d+(\.\d{1,2})?$/.test(raw)){el('err').textContent='Введите положительную сумму с точностью до копейки.';return}
  const [units,frac='']=raw.split('.'), amount=Number(units)*100+Number(frac.padEnd(2,'0'));
  if(amount<1||amount>1e12){el('err').textContent='Сумма вне допустимого диапазона.';return}
- const record={day:data.get('day'),cat:data.get('category'),amount,st:data.get('status')};
+ const record={day:data.get('day'),cat:data.get('category'),amount,st:data.get('status'),note:data.get('note')};
  if(editing && record.st==='void') editing.st='void';
  else if(editing) Object.assign(editing,record);
  else entries.push(record);

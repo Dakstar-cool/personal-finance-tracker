@@ -73,6 +73,38 @@ class FinanceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             apply(self.db,1,StringIO(header+row.replace("11-18","11-31")))
 
+    def test_malformed_csv_location(self):
+        for line, content in [(1, '"unclosed'), (3, header + row + '"unclosed')]:
+            with self.subTest(line=line), self.assertRaisesRegex(ValueError, f"Строка {line}"):
+                apply(self.db, 1, StringIO(content))
+            self.assertEqual(self.totals()[1], 140000)
+
+    def test_equivalent_iso_dates(self):
+        self.assertEqual(monthly(self.db, 1, "20261101", "20261201"), self.totals())
+
+    def test_manual_and_imported_purchase(self):
+        # Одинаковая дата и сумма без общего банковского ключа требуют решения владельца.
+        manual = draft(self.db, 1, 2, "2026-11-18", 23010, note="Чек 47")
+        change_status(self.db, manual, 1, "posted")
+        self.db.commit()
+        self.assertEqual(apply(self.db, 1, StringIO(header + row)), (1, 0))
+        self.assertEqual(self.totals()[1:3], (186020, 3813980))
+        with self.db:
+            change_status(self.db, manual, 2, "void")
+        self.assertEqual(apply(self.db, 1, StringIO(header + row)), (0, 1))
+        self.assertEqual(self.totals()[1:3], (163010, 3836990))
+
+    def test_failed_second_write_rolls_back_batch(self):
+        self.db.execute("""CREATE TEMP TRIGGER simulate_failure BEFORE INSERT ON entry
+                           WHEN NEW.bank_ref='B-009'
+                           BEGIN SELECT RAISE(ABORT,'write failure'); END""")
+        before = self.totals()
+        with self.assertRaisesRegex(sqlite3.IntegrityError, "write failure"):
+            apply(self.db, 1, StringIO(header + row + row.replace("B-008", "B-009")))
+        self.assertEqual(self.totals(), before)
+        count = self.db.execute("SELECT count(*) FROM entry WHERE bank_ref IS NOT NULL").fetchone()[0]
+        self.assertEqual(count, 0)
+
     def test_backup(self):
         with tempfile.TemporaryDirectory() as tmp:
             copy = connect(Path(tmp)/"copy.db")

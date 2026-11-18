@@ -6,19 +6,32 @@ from .models import draft, parse_amount, change_status
 HEADER = ["bank_ref", "booked_on", "kind", "category", "amount"]
 
 
+def numbered_rows(stream):
+    parser = csv.reader(stream, strict=True)
+    try:
+        for fields in parser:
+            yield parser.line_num, fields
+    except csv.Error as error:
+        raise ValueError(f"Строка {parser.line_num}. Нарушен синтаксис CSV.") from error
+
+
 def prepare(connection, account, stream):
-    reader = csv.DictReader(stream, strict=True)
-    if reader.fieldnames != HEADER:
+    rows = numbered_rows(stream)
+    _, header = next(rows, (0, []))
+    if header != HEADER:
         raise ValueError("Заголовок CSV не соответствует профилю.")
     opening = connection.execute("SELECT opened_on FROM account WHERE id=?", (account,)).fetchone()
     if not opening:
         raise ValueError("Счёт не найден.")
     new = {}
     skipped = 0
-    for row in reader:
+    for line_number, fields in rows:
+        if not fields:
+            continue
         try:
-            if None in row or any(v is None for v in row.values()):
+            if len(fields) != len(HEADER):
                 raise ValueError("Неверное количество полей.")
+            row = dict(zip(HEADER, fields))
             ref = row["bank_ref"].strip()
             day = date.fromisoformat(row["booked_on"]).isoformat()
             if day != row["booked_on"] or day < opening[0] or not ref:
@@ -40,7 +53,7 @@ def prepare(connection, account, stream):
             else:
                 new[ref] = item
         except (ValueError, TypeError) as error:
-            raise ValueError(f"Строка {reader.line_num}. {error}") from error
+            raise ValueError(f"Строка {line_number}. {error}") from error
     return new, skipped
 
 
